@@ -1,0 +1,17 @@
+{
+  "consumed": [],
+  "people": [],
+  "senders": [],
+  "seen": ["01-test-morning-04"],
+  "items": [
+    {"id": "01-test-morning-04", "class": "meeting-actions", "outcome": "yours",
+     "reason": "Three things were said that sounded like someone's to do. Pick the ones that are real.",
+     "work": [{"kind": "choose",
+               "summary": "A short call with Casey about the role, and what each side would send on.",
+               "candidates": [
+                 {"what": "Send Casey the job description", "owner": "me"},
+                 {"what": "Casey sends the salary band", "owner": "them"},
+                 {"what": "Jordan checks the budget", "owner": "them", "person": "jordan", "due": "Friday"}
+               ]}]}
+  ]
+}

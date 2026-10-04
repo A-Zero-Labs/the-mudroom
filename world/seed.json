@@ -1,0 +1,241 @@
+{
+  "you": "Alex",
+  "calendars": [
+    {
+      "id": "work",
+      "name": "Work",
+      "colour": "#4f7cf0",
+      "note": "Company Inc."
+    },
+    {
+      "id": "family",
+      "name": "Family",
+      "colour": "#3aa76d",
+      "note": "shared with Sam"
+    },
+    {
+      "id": "personal",
+      "name": "Personal",
+      "colour": "#d9822b",
+      "note": "Alex's own"
+    }
+  ],
+  "people": [
+    {
+      "id": "jordan",
+      "name": "Jordan",
+      "pronouns": "she/her",
+      "domain": "work",
+      "role": "Owns the bakery, Alex's boss",
+      "trait": "Short emails, wants a date."
+    },
+    {
+      "id": "chris",
+      "name": "Chris",
+      "pronouns": "he/him",
+      "domain": "work",
+      "role": "On the counter and the till",
+      "trait": "Lives in chat, flags problems as they happen."
+    },
+    {
+      "id": "morgan",
+      "name": "Morgan",
+      "pronouns": "they/them",
+      "domain": "work",
+      "role": "Runs the kitchen, and the baking plan",
+      "trait": "Careful, asks before changing anything."
+    },
+    {
+      "id": "taylor",
+      "name": "Taylor",
+      "pronouns": "he/him",
+      "domain": "work",
+      "role": "Fits the ovens, from the suppliers, the person Alex most often waits on",
+      "trait": "Long emails, answers the question in the third paragraph."
+    },
+    {
+      "id": "sam",
+      "name": "Sam",
+      "pronouns": "he/him",
+      "domain": "family",
+      "role": "Alex's partner",
+      "trait": "Chat only, logistics and the odd photo."
+    },
+    {
+      "id": "kim",
+      "name": "Kim",
+      "pronouns": "she/her",
+      "domain": "family",
+      "role": "Alex's nine-year-old",
+      "trait": "Present through school mail, the swimming club and Sam's messages."
+    },
+    {
+      "id": "pat",
+      "name": "Pat",
+      "pronouns": "she/her",
+      "domain": "family",
+      "role": "Alex's mother",
+      "trait": "Voice notes turned to text, worries about being a bother."
+    },
+    {
+      "id": "riley",
+      "name": "Riley",
+      "pronouns": "they/them",
+      "domain": "personal",
+      "role": "A friend",
+      "trait": "Runs the group chat for the weekly football game."
+    }
+  ],
+  "events": [
+    {
+      "id": "standup",
+      "calendar": "work",
+      "title": "Morning huddle",
+      "days": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "time": "09:00",
+      "minutes": 15
+    },
+    {
+      "id": "project-checkin",
+      "calendar": "work",
+      "title": "Catch-up with Jordan",
+      "day": 0,
+      "time": "14:00",
+      "minutes": 30
+    },
+    {
+      "id": "planning",
+      "calendar": "work",
+      "title": "Kitchen planning meeting",
+      "day": 1,
+      "time": "10:00",
+      "minutes": 90
+    },
+    {
+      "id": "one-to-one",
+      "calendar": "work",
+      "title": "One-to-one with Jordan",
+      "day": 2,
+      "time": "11:00",
+      "minutes": 30
+    },
+    {
+      "id": "steering",
+      "calendar": "work",
+      "title": "Thursday opening meeting",
+      "day": 3,
+      "time": "09:30",
+      "minutes": 60
+    },
+    {
+      "id": "wrap-up",
+      "calendar": "work",
+      "title": "Weekly wrap-up",
+      "day": 4,
+      "time": "15:00",
+      "minutes": 45
+    },
+    {
+      "id": "swimming",
+      "calendar": "family",
+      "title": "Kim's swimming",
+      "day": 0,
+      "time": "17:30",
+      "minutes": 60
+    },
+    {
+      "id": "pickup",
+      "calendar": "family",
+      "title": "School pick-up",
+      "day": 2,
+      "time": "15:00",
+      "minutes": 30
+    },
+    {
+      "id": "pat-doctor",
+      "calendar": "family",
+      "title": "Pat's doctor's appointment",
+      "day": 3,
+      "time": "10:15",
+      "minutes": 60,
+      "notes": "Alex drives."
+    },
+    {
+      "id": "lunch-pat",
+      "calendar": "family",
+      "title": "Lunch at Pat's",
+      "day": 5,
+      "time": "12:30",
+      "minutes": 120
+    },
+    {
+      "id": "football",
+      "calendar": "personal",
+      "title": "Football with Riley and friends",
+      "day": 1,
+      "time": "19:30",
+      "minutes": 90
+    }
+  ],
+  "tasks": [
+    {
+      "id": "project-update",
+      "title": "Send Jordan the opening update",
+      "domain": "work",
+      "priority": 1,
+      "due_day": 1
+    },
+    {
+      "id": "review-plan",
+      "title": "Read Morgan's plan for the opening",
+      "domain": "work",
+      "priority": 2,
+      "due_day": 2
+    },
+    {
+      "id": "trip-form",
+      "title": "Return Kim's school trip form",
+      "domain": "family",
+      "priority": 2,
+      "due_day": 3
+    },
+    {
+      "id": "dentist",
+      "title": "Book the dentist",
+      "domain": "personal",
+      "priority": 3,
+      "due_day": -7
+    },
+    {
+      "id": "car-insurance",
+      "title": "Renew the car insurance",
+      "domain": "personal",
+      "priority": 2,
+      "due_day": 9
+    }
+  ],
+  "commitments": [
+    {
+      "id": "chris-test-results",
+      "owner": "them",
+      "person": "chris",
+      "what": "Send Alex the list of problems with the new till",
+      "promised_day": -3,
+      "due_day": -3
+    }
+  ],
+  "questions": [
+    {
+      "id": "one-to-one-moved",
+      "subject": "event:one-to-one",
+      "question": "Is Wednesday's one-to-one with Jordan still on? She mentioned moving it.",
+      "asked_day": -3
+    }
+  ]
+}

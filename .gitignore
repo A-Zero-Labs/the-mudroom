@@ -1,0 +1,31 @@
+# the house's own state and the files a run leaves behind
+mudroom.db
+mudroom.db-journal
+run.log
+source.log
+handover.json
+handover.refused.json
+handoff*.json
+replies*.json
+__pycache__/
+*.pyc
+
+# development notes: the invented week's background, for whoever writes the batches.
+# Nothing the system runs reads them, and they do not ship.
+world/persona.md
+world/cast.md
+world/storyline.md
+docs/handover.md
+
+# the working backlog and the development notes that go with it
+BACKLOG.md
+docs/banner.html
+docs/decisions.md
+debt.md
+docs/debt.md
+
+# development tools: the release sweep names what it removes, and the page guards hold a
+# frozen copy of page text, so all three stay local
+tools/release_sweep.py
+tools/check_page.py
+tools/restore_blocks.py

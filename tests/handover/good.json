@@ -1,0 +1,27 @@
+{
+  "consumed": [],
+  "people": [],
+  "senders": [],
+  "seen": ["01-test-morning-01", "01-test-morning-02", "01-test-morning-03", "01-test-morning-04"],
+  "items": [
+    {"id": "01-test-morning-01", "class": "reply-needed", "outcome": "ready",
+     "reason": "Jordan wants the steering pack by Wednesday.",
+     "work": [{"kind": "reply", "body": "Jordan, Wednesday it is. Alex"},
+              {"kind": "commitment", "owner": "me", "person": "jordan",
+               "what": "Send the steering pack", "due": "Wednesday 12:00"}]},
+
+    {"id": "01-test-morning-02", "class": "answer-to-a-loop", "outcome": "ready",
+     "reason": "Chris has sent the results he promised, so that loop closes.",
+     "work": [{"kind": "update", "target": "commitment:chris-test-results", "changes": {"status": "closed"}},
+              {"kind": "event", "title": "Read the test summary", "calendar": "work",
+               "start": "Tuesday 09:30", "minutes": 15}]},
+
+    {"id": "01-test-morning-03", "class": "file-newsletter", "outcome": "filed",
+     "reason": "A newsletter. Nothing in it needs you.", "work": []},
+
+    {"id": "01-test-morning-04", "class": "reply-needed", "outcome": "yours",
+     "reason": "A recruiter, following up. Yours to say.",
+     "work": [{"kind": "question", "subject": "sender:Casey (recruiter)",
+               "question": "Casey is asking again. Take the call?"}]}
+  ]
+}

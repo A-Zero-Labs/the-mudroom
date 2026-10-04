@@ -1,0 +1,10 @@
+{
+  "consumed": ["question-1"],
+  "people": [],
+  "senders": [],
+  "seen": ["01-test-morning-04"],
+  "items": [
+    {"id": "01-test-morning-04", "class": "reply-needed", "outcome": "filed",
+     "reason": "You said no, so it goes.", "work": []}
+  ]
+}
