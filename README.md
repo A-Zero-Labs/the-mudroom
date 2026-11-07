@@ -17,7 +17,10 @@ The repository comes with a complete, working copy of the system and an invented
 run it on. Nothing is connected to your life yet. You play four days of someone else's mail
 and decide whether you like how it works.
 
-Clone it, open the folder in [Claude Code](https://claude.com/claude-code), and say:
+Clone it, or on GitHub choose Code > Download ZIP and unpack it (on Windows: right-click,
+Extract All). Open the folder that holds `mudroom.py` in
+[Claude Code](https://claude.com/claude-code); after unpacking that is the inner
+`the-mudroom-main` folder. Then say:
 
 ```
 /start
