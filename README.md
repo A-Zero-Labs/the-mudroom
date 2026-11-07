@@ -31,9 +31,16 @@ rule.
 
 The people write back. If you are rude to them, they remember.
 
-You need Python 3.10 or newer and Claude Code logged in. If `python` is not a command on
-your machine, use `python3` instead. The sorting runs through your own Claude. The Mudroom
-holds no keys.
+You need Python 3.10 or newer, Claude Code logged in, and on Windows Git for Windows. The
+sorting runs through your own Claude. The Mudroom holds no keys.
+
+Missing something? `/start` checks the machine first and offers to install what is not
+there, asking before each step. On Windows that is usually Python and Git: `winget install
+-e --id Python.Python.3.12` and `winget install -e --id Git.Git`, then close and reopen
+Claude Code. Claude Code needs Git's Bash on Windows to run the sorting. If typing `python`
+opens the Microsoft Store, switch off python.exe and python3.exe under Settings > Apps >
+Advanced app settings > App execution aliases. You can run the same check yourself at any
+time with `python mudroom.py doctor`.
 
 It was designed and tested with Claude Code. Other coding agents that pick up skills from a
 folder, Codex for one, should work too, but we have not tried them and make no promises.

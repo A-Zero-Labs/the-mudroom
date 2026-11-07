@@ -9,6 +9,7 @@
   python mudroom.py run       the whole pass on demand: the next batch in, judged, processed
   python mudroom.py status    where the play stands
   python mudroom.py show      what the agents read: the tables, their rows, or one table filtered
+  python mudroom.py doctor    is this machine ready: Python, SQLite, Claude Code, the folder, a port
 """
 import argparse
 import json
@@ -17,7 +18,7 @@ import sys
 if sys.version_info < (3, 10):
     sys.exit("The Mudroom needs Python 3.10 or newer.")
 
-from engine import agents, clock, db, demo, intake, process, server, show, status  # noqa: E402
+from engine import agents, clock, db, demo, doctor, intake, process, server, show, status  # noqa: E402
 
 
 def cmd_reset(args):
@@ -128,6 +129,12 @@ def cmd_show(args):
         conn.close()
 
 
+def cmd_doctor(args):
+    text, ready = doctor.report()
+    print(text)
+    sys.exit(0 if ready else 1)
+
+
 def cmd_status(args):
     if not db.exists():
         print("Nothing set up yet. Run 'python mudroom.py reset' first.")
@@ -162,6 +169,7 @@ def main(argv=None):
     show_parser.add_argument("tables", nargs="*")
     show_parser.set_defaults(run=cmd_show)
     sub.add_parser("status", help="where the play stands").set_defaults(run=cmd_status)
+    sub.add_parser("doctor", help="check this machine is ready to run the Mudroom").set_defaults(run=cmd_doctor)
     args = parser.parse_args(argv)
     args.run(args)
 

@@ -61,7 +61,8 @@ and the allowlist is set by the engine, where no prompt can argue with it.
 **What a machine needs.** A `claude` command on the path that is current: an old one refuses
 the model and the Doorstep says so. `claude update` fixes that. A machine that keeps several
 copies can name one in `MUDROOM_CLAUDE`. Each run spends tokens on the person's own plan, a
-few minutes of work for a batch of ten.
+few minutes of work for a batch of ten. `python mudroom.py doctor` checks a machine
+for all of this, and `/start` runs it first.
 
 **Open.** Whether the allowlist should also deny the network, and whether a run should be
 refused while a person has the repo open in an interactive session.
