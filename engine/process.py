@@ -9,6 +9,7 @@ file stays where it is, and every problem is reported. The learn-evaluate skill 
 contract this enforces. Tasks, events and commitments are written later, when a card is approved.
 """
 import json
+from datetime import date
 from pathlib import Path
 
 from . import CLASSES, KINDS, OUTCOMES, ROOT, clock, db, lock, rules
@@ -75,7 +76,8 @@ class Checker:
         self.conn = conn
         self.data = data
         self.problems = []
-        self.start = clock.as_date(db.get_state(conn, "week_start"))
+        self.start = clock.this_week(conn)
+        self.onward = date.today() if clock.real(conn) else None   # a weekday means the coming one
         self.people = {r["id"] for r in conn.execute("SELECT id FROM people")}
         self.new_people = set()
         self.calendars = tuple(r["id"] for r in conn.execute("SELECT id FROM calendars ORDER BY id"))
@@ -284,7 +286,7 @@ class Checker:
         if value is None:
             return None
         try:
-            return clock.resolve(value, self.start, need_time=need_time)
+            return clock.resolve(value, self.start, need_time=need_time, onward=self.onward)
         except ValueError as e:
             self.bad(where, f"{field}: {e}")
             return None

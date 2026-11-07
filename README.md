@@ -34,7 +34,7 @@ rule.
 
 The people write back. If you are rude to them, they remember.
 
-You need Python 3.10 or newer, Claude Code logged in, and on Windows Git for Windows. The
+You need Python 3.12 or newer, Claude Code logged in, and on Windows Git for Windows. The
 sorting runs through your own Claude. The Mudroom holds no keys.
 
 Missing something? `/start` checks the machine first and offers to install what is not
@@ -51,20 +51,22 @@ If you do, tell us how it went.
 
 ## Then make it yours
 
-Say `/make-it-mine`. It asks your name, removes the demo, connects your first inbox and
-runs the first pass, one step at a time.
+Say `/make-it-mine`. It asks your name, removes the demo, connects your first inbox, locks
+that connection to reading, and runs the first pass, one step at a time.
 
-From then on, every new email, message and note is sorted before you see it. Replies are
-drafted. Promises are tracked. Rules you teach it are kept.
+From then on, you say the name of your source in Claude Code, `/source-gmail` for one, and
+everything new is brought in and sorted before you read it. Replies are drafted. Promises
+are tracked. Rules you teach it are kept.
 
 At first it asks you before it does anything. When you trust it, you can let it handle some
 things on its own. For example: "file the newsletters without asking". You say yes to that
 rule once. After that it files newsletters by itself, and every time it does, the log shows
 it. Remove the rule and it stops.
 
-The Mudroom runs on your computer, through your own Claude, with your own accounts.
-Anything it sends goes out in your name, so read what you approve. It comes without
-warranty, as the licence says.
+The Mudroom runs on your computer, through your own Claude, with your own accounts. It
+sends nothing for you yet: a reply you approve is kept on the Doorstep, marked not sent,
+for you to send from your own mail. What you approve and teach it is done in your name, so
+read it first. It comes without warranty, as the licence says.
 
 It is your code, too. Small enough to read in an afternoon. Change anything you like.
 

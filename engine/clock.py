@@ -6,11 +6,27 @@ from . import db
 DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 
+def real(conn):
+    """Whether the house runs on real time: start-clean sets this, the demo never does."""
+    return db.get_state(conn, "clock_mode", "demo") == "real"
+
+
 def now(conn):
-    """The engine's now: its own clock while the demo plays, the real clock otherwise."""
-    if db.get_state(conn, "clock_mode", "demo") == "demo":
+    """The engine's now: its own clock while the demo plays, the real clock otherwise. Read
+    the time through here, never from the state table: in a real house the stored clock is
+    only the moment start-clean ran."""
+    if not real(conn):
         return db.get_state(conn, "clock")
     return datetime.now().isoformat(timespec="minutes")
+
+
+def this_week(conn):
+    """Monday of the engine's week: the demo's own week while it plays, the real one otherwise.
+    In the demo a weekday in a judgement, 'Thursday 12:00', means that day of this week; in a
+    real house it means the coming one, which resolve works out from today."""
+    if not real(conn):
+        return as_date(db.get_state(conn, "week_start"))
+    return week_start()
 
 
 def slot_label(dt):
@@ -34,12 +50,18 @@ def stamp(start, day, time=None):
     return datetime(d.year, d.month, d.day, int(hours), int(minutes)).isoformat(timespec="minutes")
 
 
-def resolve(text, start, need_time=False):
+def resolve(text, start, need_time=False, onward=None):
     """A date or time as the handover file may write it: ISO as in the database, or a
-    weekday with an optional time, meaning that day of the week that starts at start."""
+    weekday with an optional time, meaning that day of the week that starts at start. With
+    onward, a date, the weekday is the first such day from then on instead: in a house on
+    real time, 'Thursday' said on a Saturday means the coming one."""
     text = str(text).strip()
     value = _iso(text)
     if value is None:
+        if onward is not None:
+            start = onward - timedelta(days=onward.weekday())
+            if (named := _weekday(text, start)) is not None and as_date(named) < onward:
+                start += timedelta(days=7)
         value = _weekday(text, start)
     if value is None:
         raise ValueError(f"{text!r} is not a date: write 2026-09-16, 2026-09-16T09:00, "
@@ -100,3 +122,9 @@ def long_date(d):
 def short_date(d):
     """'Mon 14 Sep'"""
     return f"{DAYS[d.weekday()][:3]} {d.day} {d:%b}"
+
+
+def near(d):
+    """Whether a date is close enough to today that its weekday alone says which day it is.
+    The demo's week always is; a real house's log and diary run over months."""
+    return abs((d - date.today()).days) <= 6

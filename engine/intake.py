@@ -18,10 +18,17 @@ import json
 import sys
 from pathlib import Path
 
-from . import clock, db, lock
+from . import ROOT, clock, db, lock
 
 SOURCES = ("email", "chat", "transcript", "capture", "calendar")
 ITEM_FIELDS = ("id", "source", "sender", "subject", "body", "received_at", "thread", "raw")
+
+
+def source_skills(root=ROOT):
+    """The person's own source skills, by the name they are said by: /source-gmail. The
+    demo's is not one of them."""
+    skills = root / ".claude" / "skills"
+    return sorted(p.parent.name for p in skills.glob("source-*/SKILL.md") if p.parent.name != "source-demo")
 
 
 class Refused(Exception):
@@ -40,8 +47,8 @@ def bookmark(conn, source, account):
         (source, account)).fetchone()
     if row:
         out.update(dict(row))
-    out["week_start"] = db.get_state(conn, "week_start")
-    out["clock"] = db.get_state(conn, "clock")
+    out["week_start"] = clock.this_week(conn).isoformat()
+    out["clock"] = clock.now(conn)
     return out
 
 
@@ -99,8 +106,9 @@ def sent(conn, source, item_id, thread, to, subject, body, now, raw=None):
 
 def register(conn, handoff, run=True):
     """Register a source's handoff in one transaction. Returns the counts. A source's fetch
-    starts a run, held until processing; a note dropped at the door does not, it waits for
-    the next run like anything else there."""
+    that brings something to judge starts a run, held until processing; a fetch that found
+    nothing new does not, and neither does a note dropped at the door, which waits for the
+    next run like anything else there."""
     problems = check(handoff)
     if problems:
         raise Refused(problems)
@@ -109,14 +117,10 @@ def register(conn, handoff, run=True):
         if handoff.get("now") and db.get_state(conn, "clock_mode", "demo") == "demo":
             db.set_state(conn, "clock", handoff["now"])
         now = clock.now(conn)
-        if run:
-            # One batch per run: what is at the door is judged before more comes in, so a
-            # source that fetched twice in one run is stopped here, not in its prompt.
-            if lock.held(conn) and lock.intakes(conn) >= 1:
-                raise Refused(["one batch per run: what is at the door is judged before more comes in"])
-            if not lock.held(conn):
-                lock.begin(conn)
-            db.set_state(conn, "run_intakes", lock.intakes(conn) + 1)
+        # One batch per run: what is at the door is judged before more comes in, so a
+        # source that fetched twice in one run is stopped here, not in its prompt.
+        if run and lock.held(conn) and lock.intakes(conn) >= 1:
+            raise Refused(["one batch per run: what is at the door is judged before more comes in"])
         for it in handoff["items"]:
             raw = json.dumps(it.get("raw") or {}, ensure_ascii=False)
             if conn.execute("SELECT 1 FROM items WHERE id = ?", (it["id"],)).fetchone():
@@ -143,10 +147,24 @@ def register(conn, handoff, run=True):
                 counts["skipped"] += 1
             else:
                 counts["staged"] += 1
+        if run and (counts["staged"] or lock.held(conn)):
+            # A run starts with something to judge. A fetch that found nothing new, or only
+            # what the sender list skips, holds nothing up: the cards stay free.
+            if not lock.held(conn):
+                lock.begin(conn)
+            db.set_state(conn, "run_intakes", lock.intakes(conn) + 1)
+        cursor, last_seen = handoff.get("cursor"), handoff.get("last_seen_id")
+        if cursor is None:
+            # Nothing new carries no cursor, and a bookmark never moves back to nothing: that
+            # would make the next fetch a first one, with its short window, and lose the gap.
+            kept = conn.execute("SELECT cursor, last_seen_id FROM source_state WHERE source = ? AND account = ?",
+                                (handoff["source"], handoff["account"])).fetchone()
+            if kept:
+                cursor, last_seen = kept["cursor"], kept["last_seen_id"]
         conn.execute(
             "INSERT OR REPLACE INTO source_state (source, account, cursor, last_seen_id, checked_at) "
             "VALUES (?, ?, ?, ?, ?)",
-            (handoff["source"], handoff["account"], handoff.get("cursor"), handoff.get("last_seen_id"), now))
+            (handoff["source"], handoff["account"], cursor, last_seen, now))
         db.log(conn, now, "engine", "intake", target=f"{handoff['source']}:{handoff['account']}",
                detail=json.dumps({"label": handoff.get("label"), **counts}))
     counts["now"] = now
@@ -163,8 +181,9 @@ def summary(result):
         parts.append(f"{u} already known")
     head = result["label"] or "Intake"
     when = clock.clock_label(clock.as_datetime(result["now"]))
-    return (f"{head}: {', '.join(parts)}. Clock: {when}.\n"
-            "Not judged yet. Open the Doorstep to read what came in, or run learn-evaluate.")
+    nothing = "Nothing new, so nothing to judge." if not n else \
+        "Not judged yet. Open the Doorstep to read what came in, or run learn-evaluate."
+    return f"{head}: {', '.join(parts)}. Clock: {when}.\n{nothing}"
 
 
 def run(path):

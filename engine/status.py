@@ -8,8 +8,12 @@ def count(conn, table, status):
 
 def report():
     conn = db.connect()
-    start = clock.as_date(db.get_state(conn, "week_start"))
-    now = clock.as_datetime(db.get_state(conn, "clock"))
+    start = clock.this_week(conn)
+    now = clock.as_datetime(clock.now(conn))
+    you = db.get_state(conn, "you", "")
+    house = f"{you}'s Mudroom" if you else "The Mudroom"
+    if not clock.real(conn):
+        house = f"The demo: {house}"
     slots = [r[0] for r in conn.execute("SELECT DISTINCT staged_at FROM items ORDER BY staged_at")]
     if not slots:
         door = "Nothing has come to the door yet."
@@ -20,7 +24,7 @@ def report():
     if waiting:
         door += f" At the door: {waiting} items waiting to be judged."
     lines = [
-        f"The Mudroom, week of Monday {clock.long_date(start)}",
+        f"{house}, week of Monday {clock.long_date(start)}",
         f"Clock: {clock.clock_label(now)}. {door}",
         f"Open tasks: {count(conn, 'tasks', 'open')}   "
         f"Promises open: {count(conn, 'commitments', 'open')}   "

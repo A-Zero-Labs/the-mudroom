@@ -148,7 +148,18 @@ def next_file(folder, after):
     return next((f for f in files if f.stem > after), None)
 
 
+def speak_utf8():
+    """Print and read in UTF-8 whatever the machine's default. On Windows, output that goes to
+    a pipe or a file, which is how Claude reads it, is otherwise in the old code page, which
+    lacks emoji and most of the world's letters: real mail would crash the print, and a
+    handoff written with > would not read back as UTF-8."""
+    for stream in (sys.stdout, sys.stderr, sys.stdin):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
+
+
 def main(argv=None):
+    speak_utf8()
     parser = argparse.ArgumentParser(prog="rounds/source.py", description="the invented week, as a source")
     sub = parser.add_subparsers(dest="command", required=True)
     nxt = sub.add_parser("next", help="the next batch as a handoff")

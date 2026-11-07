@@ -9,7 +9,7 @@ class DoctorTest(unittest.TestCase):
     def test_this_machine_runs_every_check_and_reports_in_ascii(self):
         text, _ = doctor.report()
         text.encode("ascii")   # a Windows console on an old code page must be able to print it
-        for name in ("Python 3.10", "SQLite", "'python' or 'python3'", "Claude Code", "written to", "port"):
+        for name in ("Python 3.12", "SQLite", "'python' or 'python3'", "Claude Code", "written to", "port"):
             self.assertIn(name, text)
 
     def test_a_required_failure_means_not_ready(self):

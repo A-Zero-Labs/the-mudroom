@@ -9,9 +9,13 @@ def reset(today=None, path=None):
     """Restore the seed, stamp the dates, rewind the clock. Returns the week's Monday. The
     tests pass their own seed; the demo's is world/seed.json."""
     path = path or WORLD / "seed.json"
+    if db.real_house():
+        raise SystemExit("This house is yours: start-clean made it so, and reset would replace it "
+                         "with the invented week. To play the demo, download or clone the Mudroom "
+                         "afresh, into another folder.")
     if not path.exists():
         raise SystemExit("The invented week has left this house: start-clean removed it. "
-                         "To play the demo again, clone the Mudroom afresh.")
+                         "To play the demo again, download or clone the Mudroom afresh, into another folder.")
     data = json.loads(path.read_text(encoding="utf-8"))
     start = clock.week_start(today)
     conn = db.rebuild()

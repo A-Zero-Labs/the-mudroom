@@ -9,9 +9,12 @@ that could touch it has been taken away, so this is the door left open for readi
     python mudroom.py show items id=01-monday-morning-04
 
 Columns that hold JSON come out decoded, so an item's headers and a proposal's work read as
-what they are. Nothing here writes.
+what they are. In a house on real time, state's clock and week_start come out live, as the
+engine reads them, rather than as stored at start-clean. Nothing here writes.
 """
 import json
+
+from . import clock
 
 DECODED = {"raw": "headers", "work": "work", "detail": "detail"}
 
@@ -37,9 +40,13 @@ def rows(conn, table, filters=None):
         where.append(f"{column} = ?")
         args.append(value)
     sql = f"SELECT * FROM {table}" + (" WHERE " + " AND ".join(where) if where else "")
+    live = {"clock": clock.now(conn), "week_start": clock.this_week(conn).isoformat()} \
+        if table == "state" and clock.real(conn) else {}
     out = []
     for r in conn.execute(sql, args):
         d = dict(r)
+        if d.get("key") in live:
+            d["value"] = live[d["key"]]
         for column, name in DECODED.items():
             if isinstance(d.get(column), str):
                 try:

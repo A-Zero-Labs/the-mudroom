@@ -6,7 +6,8 @@
   python mudroom.py intake    register what a source skill fetched; the demo's is /source-demo
   python mudroom.py process   take handover.json into the database
   python mudroom.py learn-evaluate   run the two agents on what is at the door, through your Claude
-  python mudroom.py run       the whole pass on demand: the next batch in, judged, processed
+  python mudroom.py run       the whole pass on demand: in the demo the next batch in, judged,
+                              processed; in your own house, what is at the door judged
   python mudroom.py status    where the play stands
   python mudroom.py show      what the agents read: the tables, their rows, or one table filtered
   python mudroom.py doctor    is this machine ready: Python, SQLite, Claude Code, the folder, a port
@@ -15,8 +16,9 @@ import argparse
 import json
 import sys
 
-if sys.version_info < (3, 10):
-    sys.exit("The Mudroom needs Python 3.10 or newer.")
+if sys.version_info < (3, 12):   # the pages are written in the f-strings 3.12 brought
+    sys.exit(f"The Mudroom needs Python 3.12 or newer, and this is {sys.version.split()[0]}. "
+             "'python mudroom.py doctor' on a newer one says what else it needs.")
 
 from engine import agents, clock, db, demo, doctor, intake, process, server, show, status  # noqa: E402
 
@@ -30,6 +32,17 @@ def cmd_reset(args):
 def cmd_start_clean(args):
     from engine import clean
     going = clean.what_goes()
+    if db.real_house():
+        conn = db.connect()
+        try:
+            held = {t: conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+                    for t in ("items", "handling_rules", "people", "tasks")}
+            you = db.get_state(conn, "you", "")
+        finally:
+            conn.close()
+        print(f"This house is already {you}'s, and holds {held['items']} items, {held['handling_rules']} "
+              f"rules, {held['people']} people and {held['tasks']} tasks. Start clean would empty it "
+              "for good. To connect another source, write its source skill instead.")
     print("Start clean rebuilds the house empty, in your name, and removes the invented week:")
     for p in going:
         print(f"  {p.relative_to(clean.ROOT)}")
@@ -37,7 +50,7 @@ def cmd_start_clean(args):
         print("  (nothing left to remove)")
     print("The engine, the pages, the judging skill and the tests stay.")
     if not args.yes:
-        print("Run it again with --yes to go ahead. There is no way back but a fresh clone.")
+        print("Run it again with --yes to go ahead. There is no way back but a fresh download or clone.")
         return
     removed = clean.start_clean(args.you)
     print(f"Done. The house is {args.you}'s now; {len(removed)} things removed.")
@@ -88,6 +101,13 @@ def cmd_run(args):
         sys.exit(1)
     ok, message = result
     print(message)
+    if not demo.present():
+        skills = intake.source_skills()
+        if skills:
+            said = " or ".join(f"/{s}" for s in skills)
+            print(f"New things come in through your source skill: say {said} in Claude Code, in this folder.")
+        else:
+            print("No source is connected yet: say /make-it-mine in Claude Code, in this folder.")
     sys.exit(0 if ok else 1)
 
 
@@ -142,7 +162,18 @@ def cmd_status(args):
     print(status.report())
 
 
+def speak_utf8():
+    """Print and read in UTF-8 whatever the machine's default. On Windows, output that goes to
+    a pipe or a file, which is how Claude reads it, is otherwise in the old code page, which
+    lacks emoji and most of the world's letters: real mail would crash the print, and a
+    handoff written with > would not read back as UTF-8."""
+    for stream in (sys.stdout, sys.stderr, sys.stdin):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
+
+
 def main(argv=None):
+    speak_utf8()
     parser = argparse.ArgumentParser(
         prog="mudroom", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)

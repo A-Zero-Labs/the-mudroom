@@ -290,6 +290,7 @@ ul { list-style: none; margin: 0; padding: 0; }
 /* Doorstep: what you sent, beneath what it answered */
 .item.sent { margin-left: clamp(1rem, 6vw, 3rem); border-style: dashed; background: color-mix(in srgb, var(--accent) 5%, var(--panel)); }
 .item.sent.capture { background: color-mix(in srgb, var(--accent) 5%, var(--panel)); }
+.item.sent .unsent { margin: .4rem 0 0; font-size: .85rem; font-style: italic; color: var(--muted); }
 .item.sent.chat .bubble { border-radius: 14px 14px 4px 14px; background: color-mix(in srgb, var(--people) 12%, var(--panel)); }
 .item.sent .body p.empty { font-style: italic; }
 

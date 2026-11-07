@@ -18,7 +18,7 @@ the Windows Store is hiding. Find out before starting anything, and help them ge
    Git Bash, which comes with Git for Windows, and the sorting cannot run without it. If
    Python is missing too, offer both installs together, so one restart covers them.
 2. Find a working Python. Try `python --version`, then `python3 --version`, and on Windows
-   also `py -3 --version`. A version of 3.10 or newer counts. A message about the Microsoft
+   also `py -3 --version`. A version of 3.12 or newer counts. A message about the Microsoft
    Store, or no version at all, does not: that is the Store's stand-in, not Python.
 3. With one found, run `<that command> mudroom.py doctor`. It checks Python, SQLite, a
    `python` or `python3` command the sorting can use, Claude Code, that the folder can be
@@ -35,8 +35,9 @@ the Windows Store is hiding. Find out before starting anything, and help them ge
      (python.exe and python3.exe). Walk them through it; it is not a command.
    - Mac: `brew install python@3.12` if Homebrew is there; otherwise the installer from
      python.org, which they run themselves.
-   - Linux: `sudo apt install python3` or the distribution's own package; they type the
-     password themselves.
+   - Linux: `sudo apt install python3` or the distribution's own package, where that gives
+     3.12 or newer; they type the password themselves. An older system needs a newer
+     Python from python.org.
    - Claude Code too old: `claude update`.
    If winget or brew is missing, or an install fails, give the python.org link
    (https://www.python.org/downloads/) and say to tick "Add python.exe to PATH" on Windows.

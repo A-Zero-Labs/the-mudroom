@@ -229,6 +229,11 @@ ISO as the database holds them, `2026-09-16` or `2026-09-16T09:00`, or a weekday
 optional time, `Wednesday` or `Wednesday 09:00`, meaning that day of the week that starts
 at `week_start` in `state`.
 
+In a house on real time, where `clock_mode` in `state` is `real`, a weekday means the first
+such day from today on, so write ISO for any other date: one that has passed, or one more
+than a week ahead. Mail names its days from when it was sent, so read "by Friday" against
+the item's `received_at`, not against today.
+
 ## The closed lists
 
 - Classes: `memo-to-task`, `file-newsletter`, `notice-to-task`, `notice-to-diary`,

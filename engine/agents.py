@@ -65,7 +65,8 @@ def judge(timeout=TIMEOUT, owned=False):
         if not owned and lock.held(conn):
             return False, "A run is already in flight. Wait for it to finish."
         if nothing_to_do(conn):
-            return finish(conn, True, "Nothing at the door and nothing to fold in.")
+            # the run ends here, with nothing for processing to clear the lock
+            return finish(conn, True, "Nothing at the door and nothing to fold in.", over=True)
         claude = executable()
         if claude is None:
             return finish(conn, False, "Claude Code is not installed here, so nothing sorted what is at "
@@ -141,9 +142,11 @@ def explain_failure(log=LOG):
     return "The sorting failed. run.log has what Claude said."
 
 
-def finish(conn, ok, message):
+def finish(conn, ok, message, over=False):
+    """Record how the run ended. A failed run, or one with nothing to process, lets go of the
+    lock here; a good run's lock is cleared by processing."""
     with conn:
-        if not ok:
+        if not ok or over:
             lock.end(conn)
         db.set_state(conn, "last_run", json.dumps({"at": stamp(), "ok": ok, "message": message}))
     return ok, message

@@ -7,10 +7,15 @@ reply or a forward is not reversible once sent, so those rows say so; the rest c
 
 Sending back is the other kind of no: the words go with the proposal, and the next run
 judges the item again with them in hand. Declining needs no words and ends it.
+
+In a house on real time, after start-clean, nothing reaches a real account from here yet: no
+writer sends mail, answers an invitation or moves a message. So an approved reply, forward or
+email is kept, marked unsent, for the person to send themselves, and every sentence says so.
+A task or an entry in the diary lands in the Mudroom's own planner, as it does in the demo.
 """
 import json
 
-from . import db, intake, lock, rules
+from . import clock, db, intake, lock, rules
 from .process import lookup, next_id, upsert_person
 
 
@@ -55,12 +60,14 @@ def approve(conn, pid, now, by=None):
         if p["outcome"] == "filed":
             conn.execute("UPDATE items SET status = 'filed' WHERE id = ?", (p["item_id"],))
             db.log(conn, now, "engine", "file", target=p["item_id"])
-            done.append("the original filed away")
+            done.append("filed here, your mailbox left as it is" if clock.real(conn) else "the original filed away")
         for w in json.loads(p["work"] or "[]"):
             done.append(EFFECTS[w["kind"]](conn, p, w, now))
         conn.execute("UPDATE proposals SET status = 'approved', decided_at = ? WHERE id = ?", (now, pid))
         invite = p["source"] == "calendar" and p["outcome"] == "ready"
         sentence = ("Filed: " if p["outcome"] == "filed" else "Accepted: " if invite else "Approved: ") + "; ".join(done) + "."
+        if invite and clock.real(conn):
+            sentence += " Nothing went back to the sender: answer the invitation in your own calendar."
         if by:
             sentence = f"On its own, under {by}: " + sentence[0].lower() + sentence[1:]
             db.log(conn, now, "rule", "approve", target=pid, detail=sentence)
@@ -379,14 +386,17 @@ def _event(conn, p, w, now):
 
 def _reply(conn, p, w, now):
     """Inside the demo a reply is sent by recording it: who it went to, through which item,
-    and the words. A real source skill does the sending; this row is what it works from."""
+    and the words. In a real house the same row is kept unsent, for the person to send; a
+    writer that sends would work from it."""
     _out(conn, lookup(conn, p["source"], p["sender"]), p["item_id"], now)
     subject = p["subject"] and (p["subject"] if p["subject"].lower().startswith("re:") else f"Re: {p['subject']}")
-    sid = intake.sent(conn, p["source"], p["item_id"], p["thread"], p["sender"], subject, w["body"], now)
-    db.log(conn, now, "engine", "send", target=sid, reversible=False,
+    keep = clock.real(conn)
+    sid = intake.sent(conn, p["source"], p["item_id"], p["thread"], p["sender"], subject, w["body"], now,
+                      raw={"unsent": True} if keep else None)
+    db.log(conn, now, "engine", "to-send" if keep else "send", target=sid, reversible=keep,
            detail=json.dumps({"to": p["sender"], "source": p["source"], "body": w["body"],
                               "answers": p["item_id"]}, ensure_ascii=False))
-    return f"reply sent to {p['sender']}"
+    return f"reply to {p['sender']} kept for you to send" if keep else f"reply sent to {p['sender']}"
 
 
 def _forward(conn, p, w, now):
@@ -394,11 +404,12 @@ def _forward(conn, p, w, now):
     who = name["name"] if name else w["to"]
     _out(conn, w["to"], p["item_id"], now)
     subject = p["subject"] and (p["subject"] if p["subject"].lower().startswith("fwd:") else f"Fwd: {p['subject']}")
+    keep = clock.real(conn)
     sid = intake.sent(conn, p["source"], p["item_id"], p["thread"], who, subject, w.get("note") or "", now,
-                      raw={"forwarded": p["item_id"]})
-    db.log(conn, now, "engine", "forward", target=sid, reversible=False,
+                      raw={"forwarded": p["item_id"], **({"unsent": True} if keep else {})})
+    db.log(conn, now, "engine", "to-send" if keep else "forward", target=sid, reversible=keep,
            detail=json.dumps({"to": w["to"], "note": w.get("note"), "forwards": p["item_id"]}, ensure_ascii=False))
-    return f"passed on to {who}"
+    return f"passing it on to {who} kept for you to do" if keep else f"passed on to {who}"
 
 
 def _email(conn, p, w, now):
@@ -406,10 +417,12 @@ def _email(conn, p, w, now):
     name = conn.execute("SELECT name FROM people WHERE id = ?", (w["to"],)).fetchone()
     who = name["name"] if name else w["to"]
     _out(conn, w["to"], p["item_id"], now)
-    sid = intake.sent(conn, "email", p["item_id"], p["thread"], who, w["subject"], w["body"], now, raw={"fresh": True})
-    db.log(conn, now, "engine", "send", target=sid, reversible=False,
+    keep = clock.real(conn)
+    sid = intake.sent(conn, "email", p["item_id"], p["thread"], who, w["subject"], w["body"], now,
+                      raw={"fresh": True, **({"unsent": True} if keep else {})})
+    db.log(conn, now, "engine", "to-send" if keep else "send", target=sid, reversible=keep,
            detail=json.dumps({"to": w["to"], "subject": w["subject"], "body": w["body"]}, ensure_ascii=False))
-    return f"email sent to {who}"
+    return f"email to {who} kept for you to send" if keep else f"email sent to {who}"
 
 
 def _rule(conn, p, w, now):

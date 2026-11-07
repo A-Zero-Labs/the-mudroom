@@ -36,7 +36,7 @@ WATCH_RUN = """<script>
 
 def layout(conn, title, current, body, refresh=None):
     from . import demo
-    now = clock.as_datetime(db.get_state(conn, "clock"))
+    now = clock.as_datetime(clock.now(conn))
 
     def links(items):
         return "".join(f'<a href="/{slug}"{" class=\"current\"" if slug == current else ""}>{name}</a>'
@@ -176,8 +176,13 @@ OPEN_ON_ARRIVAL = """<script>
 
 
 def when_short(item):
-    at = clock.as_datetime(item["received_at"])
-    return f"{clock.DAYS[at.weekday()][:3]} {at:%H:%M}"
+    return moment(clock.as_datetime(item["received_at"]))
+
+
+def moment(at):
+    """'Thu 12:00', with the date when the weekday alone would not say which Thursday."""
+    day = clock.DAYS[at.weekday()][:3] if clock.near(at.date()) else clock.short_date(at.date())
+    return f"{day} {at:%H:%M}"
 
 
 def inbox_row(item, replies, who, arrived=()):
@@ -253,7 +258,7 @@ def demo_bar(conn, brief=False):
     last_batch = demo.last_batch(conn)
     held = lock.held(conn)
     last = agents.last_run(conn)
-    now = clock.clock_label(clock.as_datetime(db.get_state(conn, "clock")))
+    now = clock.clock_label(clock.as_datetime(clock.now(conn)))
     next_at = demo.slot(conn, upcoming) if upcoming else None
     story = h(demo.story(last_batch)) if last_batch and not brief else ""
     move = (f'<form method="post" action="/demo/next"><button>Move the clock to {h(next_at)}</button></form>'
@@ -379,11 +384,11 @@ def sent_card(item, batch_day, who):
     to = who.tag(heads.get("to", ""), item["source"])
     if heads.get("forwarded"):
         kind, head = "Passed on", f"To <b>{to}</b>"
+        main = f'<div class="body">{paragraphs(item["body"]) or "<p class=\"empty\">No note.</p>"}</div>'
     elif heads.get("fresh"):
         kind, head = "Your email", f"To <b>{to}</b>"
         subject = f"<h3>{h(item['subject'])}</h3>" if item["subject"] else ""
         main = f'{subject}<div class="body">{paragraphs(item["body"])}</div>'
-        main = f'<div class="body">{paragraphs(item["body"]) or "<p class=\"empty\">No note.</p>"}</div>'
     elif item["source"] == "chat":
         kind, head = "Your reply", f"To <b>{to}</b>"
         main = f'<div class="bubble">{paragraphs(item["body"])}</div>'
@@ -391,6 +396,11 @@ def sent_card(item, batch_day, who):
         kind, head = "Your reply", f"To <b>{to}</b>"
         subject = f"<h3>{h(item['subject'])}</h3>" if item["subject"] else ""
         main = f'{subject}<div class="body">{paragraphs(item["body"])}</div>'
+    if heads.get("unsent"):
+        # a real house sends nothing yet: the yes kept it, and the person sends it
+        kind = {"Passed on": "To pass on yourself", "Your email": "Your email, not sent",
+                "Your reply": "Your reply, not sent"}[kind]
+        main += '<p class="unsent">Not sent. Copy it into your own mail or chat to send it.</p>'
     return f"""<article class="item sent {h(item['source'])}" id="{h(item['id'])}">
   <div class="kind">{kind}</div>
   <header>{head}<time>{h(when)}</time></header>
@@ -616,13 +626,14 @@ ACTIONS = {
     "untick": "unticked", "note": "left a note", "rule": "made a rule", "unrule": "removed a rule",
     "promise-resolved": "resolved a promise",
     "task": "added a task", "event": "added to the diary", "send": "sent", "forward": "passed on",
+    "to-send": "kept for you to send",
     "update": "changed", "commitment": "noted a promise", "person": "noted about a person",
     "file": "filed", "intake": "brought in", "process": "sorted", "reset": "started the week again",
 }
 KINDS_OF_ROW = {
     "presses": ("What you pressed", None),
-    "effects": ("What the door did for you", ("task", "event", "send", "forward", "update", "commitment",
-                                              "person", "file", "rule")),
+    "effects": ("What the door did for you", ("task", "event", "send", "forward", "to-send", "update",
+                                              "commitment", "person", "file", "rule")),
     "runs": ("Runs", ("intake", "process", "reset")),
 }
 
@@ -650,7 +661,7 @@ def log_line(r, you):
     who = "you" if r["actor"] == you else ACTORS.get(r["actor"], r["actor"])
     what = ACTIONS.get(r["action"], r["action"])
     at = clock.as_datetime(r["at"])
-    when = f"{clock.DAYS[at.weekday()][:3]} {at:%H:%M}"
+    when = moment(at)
     detail = r["detail"] or ""
     if detail.startswith("{"):
         try:
@@ -825,6 +836,7 @@ class Lookup:
 
     def __init__(self, conn, names, calendars):
         self.conn, self.names, self.calendars = conn, names, calendars
+        self.real = clock.real(conn)   # a real house sends nothing yet, so a yes keeps it to send
 
     def person(self, pid):
         return self.names.get(pid, pid)
@@ -934,8 +946,10 @@ def when_label(text):
         return ""
     if "T" in text:
         dt = clock.as_datetime(text)
-        return f"{clock.day_name(dt)} {dt:%H:%M}"
-    return clock.day_name(clock.as_date(text))
+        day = clock.day_name(dt) if clock.near(dt.date()) else clock.short_date(dt.date())
+        return f"{day} {dt:%H:%M}"
+    d = clock.as_date(text)
+    return clock.day_name(d) if clock.near(d) else clock.short_date(d)
 
 
 def work_line(w, lookup):
@@ -956,7 +970,8 @@ def work_line(w, lookup):
                 f"diary: <b>{h(w['title'])}</b>, {h(start)}{h(till)}{notes}</li>")
     if kind == "reply":
         by = f" by {when_label(w['by'])}" if w.get("by") else ""
-        return f'<li>Send this reply{h(by)}:<blockquote>{paragraphs(w.get("body"))}</blockquote></li>'
+        verb = "Keep this reply for you to send" if lookup.real else "Send this reply"
+        return f'<li>{verb}{h(by)}:<blockquote>{paragraphs(w.get("body"))}</blockquote></li>'
     if kind == "rule":
         where = {"skip": f"never read at all, from {h(w.get('source'))} intake on",
                  "filed": "read, and filed without asking", "headsup": "read, and shown as a heads-up only",
@@ -966,11 +981,13 @@ def work_line(w, lookup):
         return (f"<li>From now on, <b>{h(w.get('action'))}</b><small>A rule on the {h(w.get('scope'))} "
                 f"<b>{h(w.get('pattern'))}</b>: {where}.</small></li>")
     if kind == "email":
-        return (f'<li>Send an email to <b>{lookup.who.by_id(w.get("to"))}</b>, <b>{h(w.get("subject"))}</b>:'
+        verb = "Keep an email for you to send" if lookup.real else "Send an email"
+        return (f'<li>{verb} to <b>{lookup.who.by_id(w.get("to"))}</b>, <b>{h(w.get("subject"))}</b>:'
                 f'<blockquote>{paragraphs(w.get("body"))}</blockquote></li>')
     if kind == "forward":
         note = f'<small>{h(w["note"])}</small>' if w.get("note") else ""
-        return f"<li>Pass it on to <b>{lookup.who.by_id(w.get('to'))}</b>{note}</li>"
+        verb = "Pass it on yourself to" if lookup.real else "Pass it on to"
+        return f"<li>{verb} <b>{lookup.who.by_id(w.get('to'))}</b>{note}</li>"
     if kind == "update":
         tkind, title = lookup.target(w.get("target"))
         changes = w.get("changes") or {}
@@ -1007,9 +1024,9 @@ def work_line(w, lookup):
 # Planner: the to-do list next to the week across the three calendars.
 
 def planner(conn, query=None):
-    now = clock.as_datetime(db.get_state(conn, "clock"))
+    now = clock.as_datetime(clock.now(conn))
     today = now.date()
-    start = clock.as_date(db.get_state(conn, "week_start"))
+    start = clock.this_week(conn)
     calendars = {c["id"]: c for c in conn.execute("SELECT * FROM calendars")}
     tasks = conn.execute(
         "SELECT * FROM tasks WHERE status = 'open' OR done_at >= ? "
@@ -1181,7 +1198,7 @@ def demo_door(conn):
     from . import demo
     if demo.present():
         any_items = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
-        now = clock.clock_label(clock.as_datetime(db.get_state(conn, "clock")))
+        now = clock.clock_label(clock.as_datetime(clock.now(conn)))
         go = (f'<a class="go-button" href="/doorstep">It&#x27;s {h(now)}. Carry on at the Doorstep</a>' if any_items
               else '<a class="go-button" href="/doorstep">Start the week</a>')
         return f"""<div class="door">
@@ -1194,11 +1211,23 @@ def demo_door(conn):
       <p>Be nice to Jordan. Or don't. The people write back, and they remember.</p>
       {go}
     </div>"""
+    from . import intake
     you = db.get_state(conn, "you", "") or "you"
+    skills = intake.source_skills()
+    if skills:
+        said = " or ".join(f"<code>/{h(s)}</code>" for s in skills)
+        how = (f"To bring in what is new, open Claude Code in this folder and say {said}. It reads "
+               "what arrived since last time and starts the sorting.")
+    else:
+        how = ("Nothing is connected yet. Open Claude Code in this folder and say "
+               "<code>/make-it-mine</code> to connect your first source.")
     return f"""<div class="door">
       <h2>{h(you)}'s Mudroom</h2>
       <p>The demo week has been removed. What arrives now comes from your own mail, chat and
       calendar, and the Sorting dashboard is where you say yes.</p>
+      <p>{how}</p>
+      <p>Nothing is sent from here yet. A reply you approve is kept on the Doorstep for you to
+      send yourself.</p>
       <a class="go-button" href="/sorted">Open the Sorting dashboard</a>
     </div>"""
 

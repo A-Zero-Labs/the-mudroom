@@ -29,8 +29,8 @@ class Check:
 def python_check():
     v = sys.version_info
     found = f"Python {v.major}.{v.minor}.{v.micro} at {sys.executable}"
-    # mudroom.py already refuses anything older than 3.10, so reaching here means it is fine
-    return Check("Python 3.10 or newer", v >= (3, 10), found, install_python())
+    # mudroom.py already refuses anything older than 3.12, so reaching here means it is fine
+    return Check("Python 3.12 or newer", v >= (3, 12), found, install_python())
 
 
 def install_python():
@@ -39,7 +39,8 @@ def install_python():
                 "sees the new PATH. Or the installer from python.org with 'Add python.exe to PATH' ticked.")
     if MAC:
         return "brew install python@3.12, or the installer from python.org."
-    return "sudo apt install python3 (Debian, Ubuntu), or your distribution's python3 package."
+    return ("sudo apt install python3 where that gives 3.12 or newer (Ubuntu 24.04 on); "
+            "on an older system, a newer Python from python.org.")
 
 
 def sqlite_check():
@@ -65,6 +66,7 @@ def command_check():
             usable.append(f"{name} ({path})")
     if usable:
         return Check("A 'python' or 'python3' command", True, ", ".join(usable))
+    # a Python 3.12 run by its full path, or as py, still leaves the sorting without one
     if WINDOWS:
         fix = ("Install Python with winget (see above) and reopen Claude Code. If 'python' still opens "
                "the Microsoft Store: Settings > Apps > Advanced app settings > App execution aliases, "
@@ -72,7 +74,7 @@ def command_check():
     else:
         fix = "Install Python so that python3 is on the PATH; " + install_python()
     return Check("A 'python' or 'python3' command", False,
-                 "neither name reaches a working Python (the sorting runs through one of them)", fix)
+                 "neither name reaches Python 3.12 or newer (the sorting runs through one of them)", fix)
 
 
 def store_stub(path):
@@ -80,11 +82,19 @@ def store_stub(path):
 
 
 def answers(path):
+    """Whether the command is a Python new enough to run the Mudroom."""
     try:
         done = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=15)
-        return done.returncode == 0 and "Python 3" in (done.stdout + done.stderr)
     except (OSError, subprocess.TimeoutExpired):
         return False
+    words = (done.stdout + done.stderr).split()
+    if done.returncode != 0 or len(words) < 2 or words[0] != "Python":
+        return False
+    try:
+        major, minor = (int(n) for n in words[1].split(".")[:2])
+    except ValueError:
+        return False
+    return (major, minor) >= (3, 12)
 
 
 def claude_check():

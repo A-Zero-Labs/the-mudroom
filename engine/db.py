@@ -10,6 +10,21 @@ def exists():
     return DB_PATH.exists()
 
 
+def real_house():
+    """Whether the database holds a house of the person's own, made so by start-clean. The
+    demo's buttons and reset leave such a house alone, whatever files a later pull brings."""
+    if not exists():
+        return False
+    conn = connect()
+    try:
+        row = conn.execute("SELECT value FROM state WHERE key = 'clock_mode'").fetchone()
+    except sqlite3.Error:
+        return False
+    finally:
+        conn.close()
+    return bool(row) and row[0] == "real"
+
+
 def connect():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row

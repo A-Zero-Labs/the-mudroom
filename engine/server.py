@@ -6,7 +6,7 @@ from urllib.parse import parse_qs, urlparse
 
 import json
 
-from . import ROOT, agents, db, decide, demo, lock, pages
+from . import ROOT, agents, clock, db, decide, demo, lock, pages
 
 STATIC = ROOT / "engine" / "static"
 PAGES = {"/": pages.welcome, "/piping": pages.landing, "/whats-next": pages.whats_next, "/planner": pages.planner,
@@ -96,7 +96,7 @@ class Handler(BaseHTTPRequestHandler):
         fields = parse_qs(self.rfile.read(length).decode("utf-8"))
         conn = db.connect()
         try:
-            action(conn, fields, db.get_state(conn, "clock"))
+            action(conn, fields, clock.now(conn))
         except decide.Refused as why:
             self.send_error(409, str(why))
             return

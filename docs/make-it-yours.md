@@ -20,7 +20,7 @@ are.
 **Situation.** The Mudroom has no scheduler. `python mudroom.py run` does the whole pass
 once, by hand or from a button: intake, then the two agents through your own Claude Code in
 headless mode, then processing. `engine/agents.py` is the call, with an allowlist that lets
-the model read, write `handover.json` and run `mudroom.py`, and nothing else. The piping
+the model write `handover.json` and run `mudroom.py`, and nothing else. The piping
 page says intake runs on a schedule or on demand, and only the second half is true today.
 
 **Why it matters.** A door that only sorts when you remember to run it is a
@@ -40,6 +40,13 @@ This works for the deterministic half. The judging step still needs a Claude, so
 the scheduled command invokes one headlessly or the schedule only stages, leaving the
 judgement for whenever you next open a session.
 
+In a house after start-clean, `run` judges what is at the door and fetches nothing: new
+things come in through the source skill, said by name in Claude Code, `/source-gmail` for
+one, which hands them to intake and then starts the judging. A schedule needs the fetch to
+run without a person too. The way that fits is the one the demo's own source already uses:
+`engine/agents.py` starting each source skill headless, with only that source's read tools
+on the allowlist, so `run` does the whole pass and a schedule can call it.
+
 **Open.** How often. Once a morning is the obvious start, though a busy mailbox may want
 several runs a day at different times, each doing a different job. Also open: whether a
 scheduled run should judge, or only stage and leave judging until a person is present.
@@ -50,7 +57,8 @@ scheduled run should judge, or only stage and leave judging until a person is pr
 
 **Situation.** The engine never judges. When a run reaches the two agents, `engine/agents.py`
 starts Claude Code in headless mode on the repo, with one prompt, follow the learn-evaluate
-skill, and an allowlist: read anything, edit `handover.json`, run `mudroom.py`, nothing else.
+skill, and an allowlist: edit `handover.json`, run `mudroom.py`, nothing else; the tools that
+read files are taken away, so the model reads only what `mudroom.py show` prints.
 The Doorstep's button, `python mudroom.py run` and `python mudroom.py learn-evaluate` all go
 through it. What Claude said each time is kept in `run.log`.
 
@@ -108,7 +116,7 @@ its second step. By hand it is `python mudroom.py start-clean --you "Your name"`
 what would go and removes it only with `--yes`, the folders `rounds/` and `world/` and the
 demo's source skill, then rebuilds the database empty, in your name, with the clock on real
 time. The engine, the pages, the judging skill and the tests stay. `reset` refuses from then
-on, since there is no week to restore; a fresh clone brings the demo back. Fiction left in a
+on, since there is no week to restore; a fresh download or clone brings the demo back. Fiction left in a
 real system is confusing at best, and worse once the door acts on its own.
 One rule for what a source writes: the sender of an item is the stable handle the source
 gives, an email address, a chat id, and the display name goes in the raw copy. The
@@ -133,9 +141,13 @@ accounts.
 **What a source skill does**, in the shape that has held up on a real mailbox:
 
 1. Asks the engine how far it got last time: the bookmark in `source_state` for this source
-   and account, a cursor and the id of the newest item registered. Pull only what is newer.
-   A provider's "since" is often inclusive, so drop the item whose id matches the bookmark
-   rather than widening the window.
+   and account, a cursor and the id of the newest item registered. Pull only what is newer,
+   oldest first and at most 25 at a time, so a long absence comes in over several runs and
+   no run outgrows the judge's fifteen minutes. A provider's "since" is often inclusive, so
+   drop the item whose id matches the bookmark rather than widening the window. With
+   nothing new, the handoff carries an empty list and the bookmark unchanged; a handoff
+   without a cursor leaves the bookmark where it was, since a bookmark that fell back to
+   nothing would turn the next pull into a first one, with its short window.
 2. Pulls read-only, through the connection your Claude holds. The engine never sees a
    credential. If the pull fails, tell the engine, so that it can raise a question saying
    the source needs attention and clear it on the next good pull. A dead source is never
@@ -146,8 +158,14 @@ accounts.
    included.
 4. Hands the items to the engine, `python mudroom.py intake <file>`, which registers them
    all, updates the ones it already knows, marks the ones from a sender on the skip list
-   without reading them, logs each skip, and only then moves the bookmark.
-5. Stops. Judging is the `learn-evaluate` skill's. Sending is nobody's.
+   without reading them, logs each skip, and only then moves the bookmark. A run begins
+   only when something reached the door, so a pull that found nothing holds no card up.
+5. Starts the judging, `python mudroom.py learn-evaluate`, which runs the `learn-evaluate`
+   skill headless with its own allowlist, away from the session that holds the
+   connections. Sending is nobody's.
+
+`/make-it-mine` writes the first one from a template in its own skill file, which follows
+this shape.
 
 A task app is two sources in one: its inbox, whose items are the person's own captures and
 arrive like any other item, and what was completed since the bookmark, which the engine
@@ -246,6 +264,14 @@ with an error before it reaches the tool at all. It is an allowlist rather than 
 a verb added by a future release of that tool is refused by default instead of quietly
 permitted.
 
+**What `/make-it-mine` does.** It sorts the connection's tools into reads and writes and
+denies the writes in this folder, in `.claude/settings.local.json`. Claude Code then refuses
+them in every session opened here, the headless judging included, whatever a prompt or a
+message says. It is a list of names that are denied, though, so a writing tool a connector
+adds later is allowed until someone denies it too. The headless fetch described under the
+scheduler would turn it round: only the source's named read tools allowed, everything else
+refused.
+
 **Open.** Whether the Mudroom should ship a worked example of one locked source, so the pattern
 is visible, or only describe it here.
 
@@ -259,7 +285,14 @@ appears in its planner, a reply is marked sent. Nothing leaves the file.
 **Why it matters.** On your own life you will want some of those effects to be real: a
 task actually created, an event actually added, a reply actually sent.
 
-**How it works.** The outward half is a closed map of effect writers, and one function is
+**How it works today.** After start-clean, a yes on a reply, a forward or an email keeps
+the message on the Doorstep, marked not sent, and the log says "kept for you to send"
+rather than "sent". The person sends it from their own mail. Accepting an invitation puts
+it in the Mudroom's diary and says to answer it in their own calendar. Filing marks the
+item filed in the Mudroom and leaves the mailbox as it is. Tasks and entries land in the
+Mudroom's own planner, as in the demo.
+
+**How it would work.** The outward half is a closed map of effect writers, and one function is
 the only thing allowed to call them. The demo's writers write to its own tables. Real ones
 call out through your Claude's connections. Swapping them is the mirror of swapping a
 source.
@@ -293,7 +326,10 @@ by strangers, and the judging step reads it.
 naming every command that writes on anything connected. Put the outward effects in a separate step
 with its own permissions. Check the engine's own files against known hashes so a quiet edit
 shows up. The headless run in `engine/agents.py` already does the first of these for the
-judging step: its allowlist is read, edit `handover.json`, run `mudroom.py`.
+judging step: its allowlist is edit `handover.json` and run `mudroom.py`. `/make-it-mine`
+adds the deny list for the connection's writing tools, and its source skills hand the
+judging to that headless run rather than doing it in the session that holds the
+connections.
 
 **Open.** How much of this the repo should ship by default versus explain and leave to the
 user.
@@ -330,6 +366,29 @@ single machine with a backup it may not need to.
 
 **Open.** Whether to adopt the dump-and-rebuild cycle, and if so whether it belongs in the
 demo or only in a real setup.
+
+---
+
+## Taking a newer version
+
+**Situation.** After start-clean the folder is yours: `mudroom.db` holds the house, and your
+source skills and the deny rules sit in `.claude/`. A newer Mudroom comes as a fresh
+download or clone, with the demo in it again.
+
+**Why it matters.** Fixes reach you this way and no other. A newer copy also carries the
+demo's folders, and a `git pull` brings them back too whenever the demo's own files
+changed. The engine keeps them away from a house that start-clean made yours: the demo's
+buttons stay quiet, `reset` refuses, and start-clean warns that it would empty the house.
+
+**How, for now.** Keep the old folder until the new one works. In a fresh download, delete
+`rounds/`, `world/` and `.claude/skills/source-demo/`, the three things start-clean removes.
+Copy in from the old folder `mudroom.db`, your `.claude/skills/source-*/` folders and
+`.claude/settings.local.json`. Then `/start`. With git, a pull in the old folder updates the
+engine in place; delete the demo's folders again if it brought them back.
+
+**Open.** An update command that does this for you. And the database's shape: the schema
+carries no version yet, so a newer engine on an older `mudroom.db` has not been tested,
+which is one more reason to keep the old folder until the new one has run a pass.
 
 ---
 

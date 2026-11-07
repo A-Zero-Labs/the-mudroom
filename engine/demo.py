@@ -16,8 +16,9 @@ ROUNDS = ROOT / "rounds"
 
 def present():
     """Whether the invented week is still here. After start-clean it is not, and every
-    button of the demo's goes quiet."""
-    return (ROUNDS / "source.py").exists()
+    button of the demo's goes quiet, even if a later pull or copy brings its files back:
+    a house that start-clean made the person's own never takes the invented week in."""
+    return (ROUNDS / "source.py").exists() and not db.real_house()
 
 
 def _source():
@@ -107,6 +108,13 @@ def run(wait=False):
     try:
         if lock.held(conn):
             return False
+        if not present():
+            # The invented week has left. What comes in now comes through the person's own
+            # source skills, so the pass is the judging of what is already at the door.
+            if wait:
+                return agents.judge()
+            agents.judge_in_background()
+            return True
         if agents.executable() is None:
             next_round()
             return agents.judge(owned=True)
