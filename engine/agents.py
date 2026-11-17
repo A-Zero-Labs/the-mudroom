@@ -2,8 +2,9 @@
 
 The engine never judges. When a run needs the Learning Agent and the Evaluation Agent, it
 starts Claude Code in headless mode, on this repo, with the learn-evaluate skill, allowed to
-run mudroom.py and to write handover.json, and nothing else: the file and search tools are
-taken away, so the model reads only what the engine prints. What the model does
+run two mudroom.py commands, show and process, and to write handover.json, and nothing
+else: the other commands and the file and search tools are taken away, so the model reads
+only what the engine prints. What the model does
 with that is the skill's business. What it can touch is settled here, in the allowlist,
 where no prompt can argue with it. The Doorstep's button and the run command both come
 through here, and so will a scheduler.
@@ -19,8 +20,12 @@ from pathlib import Path
 from . import ROOT, db, lock
 
 PROMPT = "/learn-evaluate"   # the skill, loaded by Claude Code itself, so no file is read to find it
-# an Edit rule covers every file-writing tool; python3 for a machine with no python command
-ALLOWED = ("Edit(handover.json)", "Bash(python mudroom.py:*)", "Bash(python3 mudroom.py:*)")
+# an Edit rule covers every file-writing tool; python3 for a machine with no python command.
+# Only show (read) and process (the checked way in): start-clean, reset or intake stay out of
+# the judge's reach, so a message that talks the model round cannot empty or fill the house.
+ALLOWED = ("Edit(handover.json)",
+           "Bash(python mudroom.py show:*)", "Bash(python3 mudroom.py show:*)",
+           "Bash(python mudroom.py process:*)", "Bash(python3 mudroom.py process:*)")
 # The demo's source, the same way: it may run the parser and the engine, and write the two
 # files the parser and intake take. Demo scaffolding; it leaves with the demo.
 SOURCE_PROMPT = "/source-demo"

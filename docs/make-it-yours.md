@@ -20,8 +20,8 @@ are.
 **Situation.** The Mudroom has no scheduler. `python mudroom.py run` does the whole pass
 once, by hand or from a button: intake, then the two agents through your own Claude Code in
 headless mode, then processing. `engine/agents.py` is the call, with an allowlist that lets
-the model write `handover.json` and run `mudroom.py`, and nothing else. The piping
-page says intake runs on a schedule or on demand, and only the second half is true today.
+the model write `handover.json` and run two `mudroom.py` commands, `show` and `process`, and
+nothing else.
 
 **Why it matters.** A door that only sorts when you remember to run it is a
 tool you have to remember to use, which is the problem it was meant to solve. Letting it

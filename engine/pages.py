@@ -1292,9 +1292,10 @@ def whats_next(conn, query=None):
   <div class="yours-grid">
     <div><b>It's your code.</b><p>Small enough to read in an afternoon. Want the week as a list? Want a fifth
     pile? Want the cards to swear at you? Change it.</p></div>
-    <div><b>It learns your rules.</b><p>Every card has a From now on. Every rule sticks. After a month it handles
-    your mail the way you would, before you have looked.</p></div>
-    <div><b>It never acts alone.</b><p>Nothing is sent, booked or filed without your yes. It keeps no passwords.
+    <div><b>It learns your rules.</b><p>Every card has a From now on. Every rule sticks. After a month it sorts
+    your mail the way you would.</p></div>
+    <div><b>It asks first.</b><p>Nothing is sent, booked or filed without your yes, unless you gave a rule your
+    yes once. It keeps no passwords.
     It writes down everything it did, on a page you can read.</p></div>
   </div>
   <h2 class="big">And when you trust it, let go a little.</h2>
@@ -1362,24 +1363,25 @@ SOURCES = [
     ("src-email", "Email",
      "The mudroom can read the inboxes of as many email accounts as you have, Gmail for example. "
      "Every message it finds becomes a new entry in <code>items</code>, carrying the sender, the "
-     "subject, the body, and the original message as it arrived. It can send email too, though "
-     "never without your approval."),
+     "subject, the body, and the original message as it arrived. As shipped, a reply you "
+     "approve is kept for you to send from your own mail; connect it to your mail if you want "
+     "the mudroom to send it."),
     ("src-chat", "Chat",
      "The mudroom can read both one-to-one and group chats, Signal for example. A chat message "
      "becomes an entry in <code>items</code> exactly like an email does, carrying who sent it, "
-     "when, and what they said. It can send chat messages too, where the tool allows it and "
-     "you permit the mudroom to do so."),
+     "when, and what they said. As shipped, a chat reply you approve is kept for you to send; "
+     "connect it to the chat app if you want the mudroom to send it."),
     ("src-calendar", "Calendar",
      "The mudroom can read your calendars across as many accounts as you keep, Google Calendar for "
      "example. Each entry lands in <code>items</code> like anything else, carrying who set it, "
-     "when it runs, and who is coming. It builds one view of all of them, so it can spot a "
-     "clash you would otherwise only catch by opening two apps. It can add meetings too, though "
-     "never without your approval."),
+     "when it runs, and who is coming. It keeps one diary of all of them, so the agents see your "
+     "whole week when they judge. As shipped, an invitation you "
+     "accept goes into the mudroom's own diary; wire it to your calendar if you want it there."),
     ("src-tasks", "Tasks",
-     "The mudroom can read and write the tasks you keep in an app like Todoist. Anything you throw "
-     "into its inbox is a new item, exactly like an email, and lands in <code>items</code> with "
-     "you as the sender. Over time you can teach the mudroom how you like that app kept, and it "
-     "will do that work ready for your approval."),
+     "A task app like Todoist can feed the mudroom too. Anything you throw into its inbox comes "
+     "in as a new item, exactly like an email, and lands in <code>items</code> with you as the "
+     "sender. Tasks you approve live in the mudroom's own list; point that at your task app if you "
+     "would rather keep them there."),
     ("src-transcripts", "Transcripts",
      "The mudroom can read written transcripts of meetings and calls, from Microsoft Teams for "
      "example, or from a recorder like Plaud. Each transcript becomes one entry in "
@@ -1403,7 +1405,8 @@ SOURCES = [
 STAGES = [
     ("intake", "Intake Engine", ("fetches what is new", "from all your sources"),
      ["source_state", "source_senders"], ["source_state", "items", "decision_log"],
-     "Intake runs on a schedule, or on demand when you start it manually. It checks each source "
+     "Intake runs on demand, when you start it. Hang a scheduler on the same command if you "
+     "want it to run by itself. It checks each source "
      "for anything new, using the timestamps kept in <code>source_state</code>. This way only new "
      "material gets fetched, instead of your whole inbox every time. Anything new gets registered "
      "in <code>items</code>, so each email gets its own entry. Every entry is then checked against "
@@ -1463,7 +1466,7 @@ STAGES = [
      '<li><code>decision_log</code>: why, in plain words, including the things it skipped.</li>'
      '<li><code>actions</code>: anything it actually did.</li>'
      '</ul>'
-     'If one part is wrong, none of it is written. The second job is doing what you approve. A button on a page sends the engine one instruction, and the engine is what sends the email, books the meeting, makes the task, or files the original away. Nothing with an effect happens until you press something. Only this engine and the Intake Engine write to the database. Neither agent does. Waiting for you on every effect is the setting this repo ships with. Once you trust it, you can let the engine act on its own for some kinds of work, and <code>docs/make-it-yours.md</code> sets out what that takes.'),
+     'If one part is wrong, none of it is written. The second job is doing what you approve. A button on a page sends the engine one instruction, and the engine is what keeps the reply for you to send, puts the meeting in the diary, makes the task, or files the original away. Nothing with an effect happens until you press something. Only this engine and the Intake Engine write to the database. Neither agent does. Waiting for you on every effect is the setting this repo ships with. Once you trust it, you can let the engine act on its own for some kinds of work, and <code>docs/make-it-yours.md</code> sets out what that takes.'),
 ]
 
 TABLES = [
@@ -1513,7 +1516,7 @@ TABLES = [
     ("proposals", "what it decided to do with each item",
      "What the mudroom decided about one item: the kind of work it is, what should happen to it, the "
      "reason, and what it proposes doing. A proposal sits <code>pending</code> until you approve or decline it. "
-     "There is no case where it goes ahead on its own.",
+     "It only goes ahead on its own under a house rule you said yes to.",
      ["item          email-18f2c9a01",
       "class         reply-needed",
       "outcome       ready",
@@ -1637,7 +1640,7 @@ EFFECTS = [
 
 # Pills carry what the subtitle cannot. The engine's subtitle already names both its jobs,
 # so it has none.
-TRIGGERS = {"intake": ("run on a schedule", "run on demand"),
+TRIGGERS = {"intake": ("run on demand",),
             "judge": ("Ready for you", "Needs your input", "Heads-up", "Filed away")}
 
 
