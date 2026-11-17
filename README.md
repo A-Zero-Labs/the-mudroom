@@ -66,7 +66,9 @@ it. Remove the rule and it stops.
 The Mudroom runs on your computer, through your own Claude, with your own accounts. It
 sends nothing for you yet: a reply you approve is kept on the Doorstep, marked not sent,
 for you to send from your own mail. What you approve and teach it is done in your name, so
-read it first. It comes without warranty, as the licence says.
+read it first. It comes without warranty, as the licence says. The Mudroom is shared for
+inspiration and is not supported software: you are responsible for what you do with your
+copy. See [SECURITY.md](SECURITY.md).
 
 It is your code, too. Small enough to read in an afternoon. Change anything you like.
 
